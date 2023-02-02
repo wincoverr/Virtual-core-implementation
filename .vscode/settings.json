@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "stdint.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "math.h": "c",
+        "stdlib.h": "c"
+    }
+}
