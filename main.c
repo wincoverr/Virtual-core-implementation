@@ -55,6 +55,7 @@ int decimal_binary(int n) /* Function to convert decimal to binary.*/
     return binary;
 }
 
+
 // et logique avec une valeur choisi => récupérer les bits qui m'interesent
 // masque pipe
 int main(int argc, char *argv[])
@@ -63,11 +64,58 @@ int main(int argc, char *argv[])
     uint8_t *returned_str = readFile("fileASCII.txt");
 
     uint32_t *buff = (uint32_t *)returned_str;
-    printf("%lx\n", buff[0]);
-    uint32_t comparaison = 4278190080;
-    uint32_t res = *buff & comparaison;
-    printf("%lx\n", res);
+    //printf("%lx\n", buff[0]);
+    
+    
+    //get IV:
+    uint32_t comparaison = 255;
+    uint32_t instructionIV = *buff & comparaison;
+    printf("%lx\n", instructionIV);
+ 
+    //get dest
 
+    comparaison = 3840;
+    uint32_t instructionDesk = *buff & comparaison;
+    instructionDesk = instructionDesk >> 8;
+    printf("%lx\n", instructionDesk);
+
+    //get op2 
+
+    comparaison = 61440;
+    uint32_t instructionOp2 = *buff & comparaison;
+    instructionOp2 = instructionOp2 >> 12;
+    printf("%lx\n", instructionOp2);
+
+    //get op1
+
+    comparaison = 983040;
+    uint32_t instructionOp1 = *buff & comparaison;
+    instructionOp1 = instructionOp1 >> 16;
+    printf("%lx\n", instructionOp1);
+
+
+  //get opcode
+
+    comparaison = 15728640;
+    uint32_t instructionOpcode = *buff & comparaison;
+    instructionOpcode = instructionOpcode >> 20;
+    printf("%lx\n", instructionOpcode);
+
+    //get flag
+
+    comparaison = 16777216;
+    uint32_t instructionflag = *buff & comparaison;
+    instructionflag = instructionflag >> 24;
+    printf("%lx\n", instructionflag);
+
+    //get BBC
+
+    comparaison = 4026531840;
+    uint32_t instructionBBC = *buff & comparaison;
+    instructionBBC = instructionBBC >> 28;
+    printf("%lx\n", instructionBBC);
+
+    
     /*
 
     Value: 1100001  97     61   comparaison = 255;
