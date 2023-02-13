@@ -6,37 +6,57 @@
 #include <math.h>
 
 // gcc -m64 -Wall -g main.c -o main
-typedef struct instruction {
-  uint32_t IV;
-  uint32_t dest;
-  uint32_t op2;
-  uint32_t op1;
-  uint32_t opcode;
-  uint32_t flag;
-  uint32_t BBC;
+typedef struct instruction
+{
+    uint32_t IV;
+    uint32_t dest;
+    uint32_t op2;
+    uint32_t op1;
+    uint32_t opcode;
+    uint32_t flag;
+    uint32_t BBC;
 } Instruction;
 
-Instruction getInstructionData(uint32_t *buff) {
-  Instruction instruction = {0};
-  uint32_t comparaison = 255;
-  
-  instruction.IV = *buff & comparaison;
-  comparaison = 3840;
-  instruction.dest = (*buff & comparaison) >> 8;
-  comparaison = 61440;
-  instruction.op2 = (*buff & comparaison) >> 12;
-  comparaison = 983040;
-  instruction.op1 = (*buff & comparaison) >> 16;
-  comparaison = 15728640;
-  instruction.opcode = (*buff & comparaison) >> 20;
-  comparaison = 16777216;
-  instruction.flag = (*buff & comparaison) >> 24;
-  comparaison = 4026531840;
-  instruction.BBC = (*buff & comparaison) >> 28;
-  
-  return instruction;
-}
+typedef struct core
+{
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r4;
+    uint32_t r5;
+    uint32_t r6;
+    uint32_t r7;
+    uint32_t r8;
+    uint32_t r9;
+    uint32_t r10;
+    uint32_t r11;
+    uint32_t r12;
+    uint32_t r13;
+    uint32_t r14;
+} Core;
 
+Instruction getInstructionData(uint32_t *buff)
+{
+    Instruction instruction = {0};
+    uint32_t comparaison = 255;
+
+    instruction.IV = *buff & comparaison;
+    comparaison = 3840;
+    instruction.dest = (*buff & comparaison) >> 8;
+    comparaison = 61440;
+    instruction.op2 = (*buff & comparaison) >> 12;
+    comparaison = 983040;
+    instruction.op1 = (*buff & comparaison) >> 16;
+    comparaison = 15728640;
+    instruction.opcode = (*buff & comparaison) >> 20;
+    comparaison = 16777216;
+    instruction.flag = (*buff & comparaison) >> 24;
+    comparaison = 4026531840;
+    instruction.BBC = (*buff & comparaison) >> 28;
+
+    return instruction;
+}
 
 char *readFile(char *fileName)
 {
@@ -62,14 +82,13 @@ char *readFile(char *fileName)
     return code;
 }
 
-
 int main(int argc, char *argv[])
 {
     uint8_t *returned_str = readFile("fileASCII.txt");
     uint32_t *buff = (uint32_t *)returned_str;
     printf("%lx\n", buff[0]);
     Instruction instruction = getInstructionData(buff);
-    
+
     printf("IV: %lx\n", instruction.IV);
     printf("dest: %lx\n", instruction.dest);
     printf("op2: %lx\n", instruction.op2);
@@ -77,6 +96,6 @@ int main(int argc, char *argv[])
     printf("opcode: %lx\n", instruction.opcode);
     printf("flag: %lx\n", instruction.flag);
     printf("BBC: %lx\n", instruction.BBC);
-    
+
     return 0;
 }
