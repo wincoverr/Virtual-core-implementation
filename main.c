@@ -6,17 +6,37 @@
 #include <math.h>
 
 // gcc -m64 -Wall -g main.c -o main
-void execute()
-{
+typedef struct instruction {
+  uint32_t IV;
+  uint32_t dest;
+  uint32_t op2;
+  uint32_t op1;
+  uint32_t opcode;
+  uint32_t flag;
+  uint32_t BBC;
+} Instruction;
+
+Instruction getInstructionData(uint32_t *buff) {
+  Instruction instruction = {0};
+  uint32_t comparaison = 255;
+  
+  instruction.IV = *buff & comparaison;
+  comparaison = 3840;
+  instruction.dest = (*buff & comparaison) >> 8;
+  comparaison = 61440;
+  instruction.op2 = (*buff & comparaison) >> 12;
+  comparaison = 983040;
+  instruction.op1 = (*buff & comparaison) >> 16;
+  comparaison = 15728640;
+  instruction.opcode = (*buff & comparaison) >> 20;
+  comparaison = 16777216;
+  instruction.flag = (*buff & comparaison) >> 24;
+  comparaison = 4026531840;
+  instruction.BBC = (*buff & comparaison) >> 28;
+  
+  return instruction;
 }
 
-void fetch()
-{
-}
-
-void decode()
-{
-}
 
 char *readFile(char *fileName)
 {
@@ -42,88 +62,21 @@ char *readFile(char *fileName)
     return code;
 }
 
-int decimal_binary(int n) /* Function to convert decimal to binary.*/
-{
-    uint64_t rem, i = 1, binary = 0;
-    while (n != 0)
-    {
-        rem = n % 2;
-        n /= 2;
-        binary += rem * i;
-        i *= 10;
-    }
-    return binary;
-}
 
-
-// et logique avec une valeur choisi => récupérer les bits qui m'interesent
-// masque pipe
 int main(int argc, char *argv[])
 {
-    // on peut crer les registredans un tableau
     uint8_t *returned_str = readFile("fileASCII.txt");
-
     uint32_t *buff = (uint32_t *)returned_str;
-    //printf("%lx\n", buff[0]);
+    printf("%lx\n", buff[0]);
+    Instruction instruction = getInstructionData(buff);
     
+    printf("IV: %lx\n", instruction.IV);
+    printf("dest: %lx\n", instruction.dest);
+    printf("op2: %lx\n", instruction.op2);
+    printf("op1: %lx\n", instruction.op1);
+    printf("opcode: %lx\n", instruction.opcode);
+    printf("flag: %lx\n", instruction.flag);
+    printf("BBC: %lx\n", instruction.BBC);
     
-    //get IV:
-    uint32_t comparaison = 255;
-    uint32_t instructionIV = *buff & comparaison;
-    printf("%lx\n", instructionIV);
- 
-    //get dest
-
-    comparaison = 3840;
-    uint32_t instructionDesk = *buff & comparaison;
-    instructionDesk = instructionDesk >> 8;
-    printf("%lx\n", instructionDesk);
-
-    //get op2 
-
-    comparaison = 61440;
-    uint32_t instructionOp2 = *buff & comparaison;
-    instructionOp2 = instructionOp2 >> 12;
-    printf("%lx\n", instructionOp2);
-
-    //get op1
-
-    comparaison = 983040;
-    uint32_t instructionOp1 = *buff & comparaison;
-    instructionOp1 = instructionOp1 >> 16;
-    printf("%lx\n", instructionOp1);
-
-
-  //get opcode
-
-    comparaison = 15728640;
-    uint32_t instructionOpcode = *buff & comparaison;
-    instructionOpcode = instructionOpcode >> 20;
-    printf("%lx\n", instructionOpcode);
-
-    //get flag
-
-    comparaison = 16777216;
-    uint32_t instructionflag = *buff & comparaison;
-    instructionflag = instructionflag >> 24;
-    printf("%lx\n", instructionflag);
-
-    //get BBC
-
-    comparaison = 4026531840;
-    uint32_t instructionBBC = *buff & comparaison;
-    instructionBBC = instructionBBC >> 28;
-    printf("%lx\n", instructionBBC);
-
-    
-    /*
-
-    Value: 1100001  97     61   comparaison = 255;
-    Value: 1100010  98     62   65280
-    Value: 1100011  99     63   16711680
-    Value: 1100100  100    64   4278190080
-
-    */
-
     return 0;
 }
