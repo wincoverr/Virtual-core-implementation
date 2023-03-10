@@ -36,7 +36,31 @@ typedef struct core
     uint32_t r14;
 } Core;
 
-Instruction getInstructionData(uint32_t *buff)
+
+
+
+Instruction decode(uint32_t *buff)
+{
+    Instruction instruction = {0};
+    uint32_t mask = 0xff;
+
+    instruction.IV = *buff & mask;
+    mask = 0xf00;
+    instruction.dest = (*buff & mask) >> 8;
+    mask = 0xf000;
+    instruction.op2 = (*buff & mask) >> 12;
+    mask = 0xf0000;
+    instruction.op1 = (*buff & mask) >> 16;
+    mask = 0xf00000;
+    instruction.opcode = (*buff & mask) >> 20;
+    mask = 0x1000000;
+    instruction.flag = (*buff & mask) >> 24;
+    mask = 0xf0000000;
+    instruction.BBC = (*buff & mask) >> 28;
+    return instruction;
+}
+/*
+Instruction decode(uint32_t *buff)
 {
     Instruction instruction = {0};
     uint32_t comparaison = 255;
@@ -55,8 +79,31 @@ Instruction getInstructionData(uint32_t *buff)
     comparaison = 4026531840;
     instruction.BBC = (*buff & comparaison) >> 28;
 
+    /*
+
+
+    Value: 1100001  97     61   comparaison = 255;
+    Value: 1100010  98     62   65280
+    Value: 1100011  99     63   16711680
+    Value: 1100100  100    64   4278190080
+
+
+        /* 01510020 
+        64636261
+
+        little endian
+
+    iv : 20
+    dest: 0
+    op2 :0
+    op1 : 1
+    operation code: 5
+    flag: 1
+    bcc : 0
+
+    
     return instruction;
-}
+}*/
 
 char *readFile(char *fileName)
 {
@@ -84,10 +131,11 @@ char *readFile(char *fileName)
 
 int main(int argc, char *argv[])
 {
-    uint8_t *returned_str = readFile("fileASCII.txt");
+    /**/
+    uint8_t *returned_str = readFile("file.bin");
     uint32_t *buff = (uint32_t *)returned_str;
     printf("%lx\n", buff[0]);
-    Instruction instruction = getInstructionData(buff);
+    Instruction instruction = decode(buff);
 
     printf("IV: %lx\n", instruction.IV);
     printf("dest: %lx\n", instruction.dest);
@@ -97,5 +145,79 @@ int main(int argc, char *argv[])
     printf("flag: %lx\n", instruction.flag);
     printf("BBC: %lx\n", instruction.BBC);
 
+    uint32_t PC = 0;
+    int32_t offset = (int32_t)instruction.IV;
+    switch (10)
+    {
+    case 0x8: // Unconditional branch
+        PC = (uint32_t)offset;
+        break;
+    case 0x9: // Branch if equal
+        if (instruction.flag)
+        {
+            PC = (uint32_t)(offset + 4); // add 4 to skip the next instruction
+        }
+        else
+        {
+            PC = (uint32_t)(PC + 4); // execute the next instruction
+        }
+        break;
+    case 0xa: // Branch if not equal
+        if (!instruction.flag)
+        {
+            PC = (uint32_t)(offset + 4);
+        }
+        else
+        {
+            PC = (uint32_t)(PC + 4);
+        }
+        break;
+    case 0xb: // Branch if lower or equal
+        if (instruction.flag || instruction.op1 == instruction.op2)
+        {
+            PC = (uint32_t)(offset + 4);
+        }
+        else
+        {
+            PC = (uint32_t)(PC + 4);
+        }
+        break;
+    case 0xc: // Branch if greater or equal
+        if (instruction.flag || instruction.op1 > instruction.op2)
+        {
+            PC = (uint32_t)(offset + 4);
+        }
+        else
+        {
+            PC = (uint32_t)(PC + 4);
+        }
+        break;
+    case 0xd: // Branch if lower
+        if (!instruction.flag && instruction.op1 < instruction.op2)
+        {
+            PC = (uint32_t)(offset + 4);
+        }
+        else
+        {
+            PC = (uint32_t)(PC + 4);
+        }
+        break;
+    case 0xe: // Branch if gr   eater
+        if (!instruction.flag && instruction.op1 > instruction.op2)
+        {
+            PC = (uint32_t)(offset + 4);
+        }
+        else
+        {
+            PC = (uint32_t)(PC + 4);
+        }
+        break;
+    default: // any other value
+        PC = (uint32_t)(PC + 4);
+        break;
+    }
+
+    // Print the result
+    printf("PC: %u\n", PC);
     return 0;
 }
