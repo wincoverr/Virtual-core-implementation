@@ -58,7 +58,6 @@ Instruction decode(uint32_t *buff)
     instruction.flag = (tmp & mask) >> 24;
     mask = 0xf0000000;
     instruction.BBC = (tmp & mask) >> 28;
-
     return instruction;
 }
 
