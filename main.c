@@ -18,26 +18,6 @@ typedef struct instruction
     uint32_t BBC;
 } Instruction;
 
-typedef struct core
-{
-    uint32_t r0;
-    uint32_t r1;
-    uint32_t r2;
-    uint32_t r3;
-    uint32_t r4;
-    uint32_t r5;
-    uint32_t r6;
-    uint32_t r7;
-    uint32_t r8;
-    uint32_t r9;
-    uint32_t r10;
-    uint32_t r11;
-    uint32_t r12;
-    uint32_t r13;
-    uint32_t r14;
-} Core;
-
-
 Instruction decode(uint32_t *buff)
 {
     Instruction instruction = {0};
@@ -61,27 +41,6 @@ Instruction decode(uint32_t *buff)
     return instruction;
 }
 
-/*
-
-    Value: 1100001  97     61   comparaison = 255;
-    Value: 1100010  98     62   65280
-    Value: 1100011  99     63   16711680
-    Value: 1100100  100    64   4278190080
-
-        /* 01510020 
-        64636261
-
-        little endian
-
-    iv : 20
-    dest: 0
-    op2 :0
-    op1 : 1
-    operation code: 5
-    flag: 1
-    bcc : 0
-
-*/
 
 char *readFile(char *fileName)
 {
