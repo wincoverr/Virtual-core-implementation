@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
-#include <arpa/inet.h>  // htonl()
+#include <stdbool.h>
 
-// gcc -m64 -Wall -g main.c -o main
+#include <arpa/inet.h> // htonl()
+
+// gcc -m64 -g main.c -o main
 typedef struct instruction
 {
     uint32_t IV;
@@ -18,29 +20,35 @@ typedef struct instruction
     uint32_t BBC;
 } Instruction;
 
+uint32_t reg[16];
+
+
+/*
+Décode l'instruction à partir d'une valeur de 32 bits.Les bits sont extraits en suivant l'énoncé et stockés dans
+une structure.
+*/
 Instruction decode(uint32_t *buff)
 {
     Instruction instruction = {0};
-    uint32_t mask = 0xff;
+    uint32_t mask = 0b00000000000000000000000011111111;
 
-    uint32_t tmp = ntohl(*buff); 
+    uint32_t tmp = ntohl(*buff);
 
     instruction.IV = tmp & mask;
-    mask = 0xf00;
+    mask = 0b00000000000000000000111100000000;
     instruction.dest = (tmp & mask) >> 8;
-    mask = 0xf000;
+    mask = 0b00000000000000001111000000000000;
     instruction.op2 = (tmp & mask) >> 12;
-    mask = 0xf0000;
+    mask = 0b00000000000011110000000000000000;
     instruction.op1 = (tmp & mask) >> 16;
-    mask = 0xf00000;
+    mask = 0b00000000001111000000000000000000;
     instruction.opcode = (tmp & mask) >> 20;
-    mask = 0x1000000;
+    mask = 0b00000001000000000000000000000000;
     instruction.flag = (tmp & mask) >> 24;
-    mask = 0xf0000000;
+    mask = 0b11110000000000000000000000000000;
     instruction.BBC = (tmp & mask) >> 28;
     return instruction;
 }
-
 
 char *readFile(char *fileName)
 {
@@ -66,9 +74,172 @@ char *readFile(char *fileName)
     return code;
 }
 
+
+
+/*
+
+ je n'ai pas ajouté le code à mon programme, donc ça ne va pas marcher!
+ Calcule la nouvelle valeur du pc
+ Gère les différents types de conditions de branchement
+*/
+int32_t fetch(uint32_t pc, uint32_t *code, Instruction instruction) {
+    uint32_t new_pc;
+    bool take_branch = false;
+
+    new_pc = pc;
+
+    if (instruction.BBC == 0x8) {
+        return new_pc;
+    }
+    if (instruction.BBC == 0x9) {
+        if (reg[instruction.dest] == reg[instruction.op2]) {
+            take_branch = true;
+        }
+    } else if (instruction.BBC == 0xA) {
+        if (reg[instruction.dest] != reg[instruction.op2]) {
+            take_branch = true;
+        }
+    } else if (instruction.BBC == 0xB) {
+        if (reg[instruction.dest] <= reg[instruction.op2]) {
+            take_branch = true;
+        }
+    } else if (instruction.BBC == 0xC) {
+        if (reg[instruction.dest] >= reg[instruction.op2]) {
+            take_branch = true;
+        }
+    } else if (instruction.BBC == 0xD) {
+        if (reg[instruction.dest] < reg[instruction.op2]) {
+            take_branch = true;
+        }
+    } else if (instruction.BBC == 0xE) {
+        if (reg[instruction.dest] > reg[instruction.op2]) {
+            take_branch = true;
+        }
+    }
+
+    if (take_branch) {
+        return new_pc;
+    } else {
+        return pc + 4;
+    }
+}
+
+
+
+/*
+    long case pour faire toutes les possibilités
+*/
+void execute(Instruction instruction)
+{
+    uint32_t op1 = reg[instruction.op1];
+    uint32_t op2;
+if (instruction.IV & 0x01000000) {
+  op2 = instruction.IV & 0x00FFFFFF;
+} else {
+  op2 = reg[instruction.op2];
+}
+    switch (instruction.opcode)
+    {
+        case 0x0:  // AND
+            reg[instruction.dest] = op1 & op2;
+            break;
+
+        case 0x1:  // OR
+            reg[instruction.dest] = op1 | op2;
+            break;
+
+        case 0x2:  // XOR
+            reg[instruction.dest] = op1 ^ op2;
+            break;
+
+        case 0x3:  // ADD
+            reg[instruction.dest] = op1 + op2;
+            break;
+
+        case 0x4:  // ADC
+            reg[instruction.dest] = op1 + op2 + reg[15];
+            break;
+
+        case 0x5:  // CMP
+            if (op1 == op2)
+            {
+                reg[15] = 1 << 0;  // BEQ
+            }
+            else if (op1 < op2)
+            {
+                reg[15] = 1 << 2;  // BLE
+            }
+            else
+            {
+                reg[15] = 1 << 5;  // BG
+            }
+            break;
+
+        case 0x6:  // SUB
+            reg[instruction.dest] = op1 - op2;
+            break;
+
+        case 0x7:  // SBC
+            reg[instruction.dest] = op1 - op2 - !reg[15];
+            break;
+
+        case 0x8:  // MOV
+            reg[instruction.dest] = op2;
+            break;
+
+        case 0x9:  // LSH
+            reg[instruction.dest] = op1 << op2;
+            break;
+
+        case 0xA:  // RSH
+            reg[instruction.dest] = op1 >> op2;
+            break;
+
+        default:
+            printf("ERROR: invalid opcode 0x%x\n", instruction.opcode);
+            exit(1);
+            break;
+    }
+}
+
+
 int main(int argc, char *argv[])
 {
-    /**/
+    /*
+    // Verification
+    if (argc < 3 || argc > 4)
+    {
+        fprintf(stderr, "BIN_NAME <CODE> <STATE> (VERBOSE)");
+        return 1;
+    }
+    bool verbose = (argc == 4 && strcmp(argv[3], "VERBOSE") == 0);
+
+    // Ouvre le fichier de code spécifié dans le premier argument, vérifie que le fichier est ouvert avec succès et calcule sa taille.
+    // charge ensuite le contenu du fichier dans un tableau d'octets.
+    FILE *codeF = fopen(argv[1], "rb");
+    if (!codeF)
+    {
+        fprintf(stderr, "erreur sur le fichier code");
+        return 1;
+    }
+    fseek(codeF, 0, SEEK_END);
+    long code_size = ftell(codeF);
+    rewind(codeF);
+    uint8_t *code = (uint8_t *)malloc(code_size);
+    fread(code, 1, code_size, codeF);
+    fclose(codeF);
+
+    // Ouvre le fichier d'état initial spécifié dans le deuxième argument, vérifie que le fichier est ouvert avec succès.
+    FILE *stateF = fopen(argv[2], "r");
+    if (!stateF)
+    {
+        fprintf(stderr, "erreur sur le fichier state");
+        return 1;
+    }
+
+    // Je ne sais pas trop quoi faire après avec ce fichier
+*/
+  
     uint8_t *returned_str = readFile("file.bin");
     uint32_t *buff = (uint32_t *)returned_str;
     printf("%lx\n", buff[0]);
